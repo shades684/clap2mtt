@@ -1,0 +1,4 @@
+vendor
+config.json
+.main.go.swp
+.vscode/launch.json

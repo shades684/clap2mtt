@@ -1,0 +1,16 @@
+# cp ./clap.service /etc/systemd/system/clap.service 
+[Unit]
+Description=clap2mqtt service
+After=network.target
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+ExecStart=/home/robbert/projects/clap-mqtt/build/clap2mqtt
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=%n
+
+[Install]
+WantedBy=multi-user.target
