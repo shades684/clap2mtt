@@ -2,13 +2,14 @@ package clapping
 
 import (
 	"time"
+	"fmt"
 
 	"clap2mqtt/detection"
 )
 
 const LEAD_OUT_CLAP_MS = 80
 const LEAD_IN_CLAPPING_MS = 500
-const LEAD_OUT_CLAPPING_MS = 500
+const LEAD_OUT_CLAPPING_MS = 1000
 
 type Clapping struct {
 	start      time.Time
@@ -45,10 +46,13 @@ func (c Clapping) isValid() bool {
 	return true
 }
 
-func (c Clapping) AddDetection(d detection.Detection) {
-	if c.isValid() && c.isClap(d) {
+func (c *Clapping) AddDetection(d detection.Detection) {
+	if c.isClap(d) {
+		fmt.Println("Adding Sound")
 		c.detections = append(c.detections, d)
-	} else {
+	} 
+	
+	if !c.isValid() {
 		c.Reset()
 	}
 }
@@ -65,7 +69,8 @@ func (c Clapping) Count() int {
 	return 0
 }
 
-func (c Clapping) Reset() {
+func (c *Clapping) Reset() {
+	fmt.Println("Resetting")
 	c.detections = make([]detection.Detection, 0)
 	c.start = time.Now()
 }
