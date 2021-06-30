@@ -57,6 +57,8 @@ func main() {
 	fmt.Println("configuring...")
 
 	config := configure()
+	id := config.Uuid + "_" + strconv.Itoa(config.Pin)
+
 	message := `{
               "value": 3,
               "name": "Pi Clap",
@@ -78,28 +80,19 @@ func main() {
 
 	fmt.Println("connecting to mqtt")
 
-   	options := mqtt.NewClientOptions()
-        options.AddBroker(config.Broker)
-        client := mqtt.NewClient(options)
-        client.Connect()
+	options := mqtt.NewClientOptions().AddBroker(config.Broker)
+	client := mqtt.NewClient(options)
+
+	token := client.Connect()
+	token.Wait()
+
 	defer client.Disconnect(0)
 
-	id := config.Uuid + "_" + strconv.Itoa(config.Pin)
-	publish := func(claps int) {
-              token := client.Publish("clap2mqtt/"+id, 0, true, claps)
-              token.Wait()
-
-              time.Sleep(500 * time.Millisecond)
-
-              token = client.Publish("clap2mqtt/"+id, 0, true, 0)
-              token.Wait()
-        }
-	
 	fmt.Println(fmt.Sprintf("registering device %s to mqtt/homeassistant", id))
 
-	token := client.Publish("homeassistant/sensor/"+id+"/config", 0, true, fmt.Sprintf(message, id, id))
+	token = client.Publish("homeassistant/sensor/"+id+"/config", 0, true, fmt.Sprintf(message, id, id))
 	token.Wait()
-	
+
 	clapping := clapping.NewClapping()
 	var soundDetection *detection.Detection = nil
 
@@ -112,7 +105,7 @@ func main() {
 			soundDetection = detection.NewDetection()
 		} else if soundDetection != nil {
 			soundDetection.Update(signal)
-			
+
 			if soundDetection.HasStopped() {
 				fmt.Println("Adding Detection")
 				clapping.AddDetection(*soundDetection)
@@ -122,7 +115,14 @@ func main() {
 
 		if clapping.HasStopped() {
 			fmt.Println(clapping.Count())
-			publish(clapping.Count())
+			token = client.Publish("clap2mqtt/"+id, 0, true, strconv.Itoa(clapping.Count()))
+			token.Wait()
+
+			time.Sleep(500 * time.Millisecond)
+
+			token = client.Publish("clap2mqtt/"+id, 0, true, "0")
+			token.Wait()
+
 			clapping.Reset()
 		}
 
